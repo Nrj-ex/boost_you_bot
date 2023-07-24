@@ -17,6 +17,11 @@ class UsersStorage:
 
         self.database.create_table(request)
 
+        # todo создать таблицу с упражнениями
+        # todo создать таблицу с названиями упражнений
+
+
+
     def __get_user_data__(self, user_id: int) -> tuple:
         request = """SELECT id, name, username, full_name, link, role,  
         joining_date FROM users WHERE id = {user_id}""".format(user_id=user_id)
