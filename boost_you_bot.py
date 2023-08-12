@@ -25,14 +25,15 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 from database.database_class import Database
-from users_storage import UsersStorage
+from classes.users_storage import Storage
 
 memes_db = Database()
-users = UsersStorage(memes_db)
+storage = Storage(memes_db)
 
 CANCEL_SAVE_SET, CONFIRM_SAVING, SET_EXERCISE_NAME, WAIT_SOLUTION = range(4)
-# todo получать список из базы
-exercise_list = ['qqq', 'www', 'eee']
+# todo получать список из базы и перейти на id, что бы не зависеть от языка
+from classes.exercise_class import Exercise
+exercise_list = Exercise.get_names()
 
 
 # Define a few command handlers. These usually take the two arguments update and
@@ -41,7 +42,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Send a message when the command /start is issued."""
 
     user = update.effective_user
-    users.add_user(user=user)
+    storage.add_user(user=user)
     keyboard = [
         [InlineKeyboardButton('start', callback_data='start')],
     ]
@@ -53,17 +54,24 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 async def choose_exercise(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Send a message when the command /help is issued."""
     user = update.effective_user
-    # todo сохранить количество
-    context.user_data['exercise'] = [update.message.text]
+    exercise = Exercise(user_id=user.id)
+    # сохранить количество повторений
+    if update.message.text.split()[0].isdigit():
+        # первое число считается количеством повторений
+        exercise.count = int(update.message.text.split()[0].isdigit())
+    else:
+        # todo ошибка, количество повторений не распознано введите целое число
+        # todo выход из сценария
+        pass
 
-    exercise_buttons = []
-    for exercise in exercise_list:
-        exercise_buttons.append(InlineKeyboardButton(exercise, callback_data=exercise))
+    context.user_data['exercise'] = exercise
 
-    keyboard = [
-        exercise_buttons,
-        [InlineKeyboardButton('Cancel', callback_data=str(CANCEL_SAVE_SET))],
-    ]
+    keyboard = []
+    for exercise in exercise.names:
+        keyboard.append([InlineKeyboardButton(exercise, callback_data=exercise)])
+
+    keyboard.append([InlineKeyboardButton('Cancel', callback_data=str(CANCEL_SAVE_SET))])
+
     reply_markup = InlineKeyboardMarkup(keyboard)
     await context.bot.send_message(chat_id=user.id, text=update.message.text, reply_markup=reply_markup)
     return SET_EXERCISE_NAME
@@ -73,39 +81,51 @@ async def set_exercise_name(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     # todo сохранение в юзер дату названия упражнения
     user = update.effective_user
     query = update.callback_query
-    if context.user_data.get('exercise'):
-        context.user_data['exercise'].append(query.data)
+    if not context.user_data.get('exercise'):
+        # Если нету упражнения выход
+        error_text = "Error: Упражнение не найдено.\nПопробуйте заново"
+        await context.bot.send_message(chat_id=user.id, text=error_text)
+        await cancel_save_set(update, context)
+
+        # context.user_data['exercise'].append(query.data)
+    exercise = context.user_data.get('exercise')
+    exercise.name = query.data
+
     await context.bot.send_message(chat_id=update.effective_chat.id, text=f"set_exercise_name {query.data}")
-    text = context.user_data.get('exercise')
-    print(text)
+
+
     # клавиатура да/нет
+    # todo добавить кнопку "ввести вес"
     keyboard = [
-        [InlineKeyboardButton('Сохранить', callback_data=str(CONFIRM_SAVING))],
+        [InlineKeyboardButton('Save', callback_data=str(CONFIRM_SAVING))],
         [InlineKeyboardButton('Cancel', callback_data=str(CANCEL_SAVE_SET))],
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
-    # выводить выбранное упражнение и количество
-    await context.bot.send_message(chat_id=user.id, text='confirm_saving', reply_markup=reply_markup)
+    # todo выводить выбранное упражнение и количество (exercise.show)
+    print(exercise.show())
+    await context.bot.send_message(chat_id=user.id, text=f'confirm_saving\n{exercise.show()}', reply_markup=reply_markup)
 
     return WAIT_SOLUTION
 
 
 
 
-async def save_set_exercise(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def save_set_exercise(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     # todo сохранение в бд
     await context.bot.send_message(chat_id=update.effective_user.id,
-                                   text=f"save_set_exercise {str(context.user_data.get('exercise'))}")
+                                   text=f"save_set_exercise {context.user_data.get('exercise')}")
 
     context.user_data.clear()
     return ConversationHandler.END
 
 
-async def cancel_save_set(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    # todo сообщение что сохранение отменено
+async def cancel_save_set(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    '''
+    :return: Отмена сохранения сообщения
+    '''
     context.user_data.clear()
-    await context.bot.send_message(chat_id=update.effective_user.id, text="cancel_save_set")
+    await context.bot.send_message(chat_id=update.effective_user.id, text="Отмена")
     return ConversationHandler.END
 
 
@@ -141,6 +161,7 @@ def main() -> None:
         states={
             SET_EXERCISE_NAME:
                 [
+                    # todo брать упражнения из класса
                     CallbackQueryHandler(set_exercise_name, pattern="^" + exercise + "$") for exercise in exercise_list
                 ],
             WAIT_SOLUTION:

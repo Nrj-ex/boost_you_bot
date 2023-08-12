@@ -5,21 +5,45 @@ from random import shuffle
 from database.database_class import Database
 
 
-class UsersStorage:
+class Storage:
     def __init__(self, database: Database):
         self.database = database
         self.__check_struct_db__()
+        self.__fill_exercise_names__()
 
     def __check_struct_db__(self) -> None:
         # Таблица пользователей
-        request = "CREATE TABLE if not exists users(id integer PRIMARY KEY,name text , username text, " \
-                  "full_name text, link text, role text, joining_date timestamp)"
+        request = ("CREATE TABLE if not exists users(id integer PRIMARY KEY, name text, "
+                   "username text, full_name text, link text, role text, joining_date timestamp)")
 
         self.database.create_table(request)
 
-        # todo создать таблицу с упражнениями
-        # todo создать таблицу с названиями упражнений
+        # таблица с названиями упражнений
+        request = "CREATE TABLE if not exists exercise_names(id integer PRIMARY KEY, name_ru text, name_eng text)"
+        self.database.create_table(request)
 
+        # таблица с упражнениями
+        request = ("CREATE TABLE if not exists exercise_sets(id integer PRIMARY KEY, "
+                   "user_id integer, exercise_id integer, count integer, weight int, time int)")
+        self.database.create_table(request)
+
+    def __fill_exercise_names__(self) -> None:
+        """
+        Наполняет таблицу exercise_names названиями упражнений
+        при каждом запуске перезаписывается
+        """
+        exercise_names = [
+            (1, 'приседания', 'squat'),
+            (2, 'отжимания', 'push-ups'),
+            (3, 'подтягивания', 'pull-ups'),
+            (4, 'пресс', 'abs'),
+
+        ]
+
+        for id, name_ru, name_eng in exercise_names:
+            request = f"INSERT INTO exercise_names(id, name_ru, name_eng) " \
+                      f"VALUES(?, ?, ?) on conflict (id) do update set name_ru = '{name_ru}', name_eng = '{name_eng}'"
+            self.database.insert(request, (id, name_ru, name_eng))
 
 
     def __get_user_data__(self, user_id: int) -> tuple:
