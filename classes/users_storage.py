@@ -3,6 +3,7 @@ from telegram import User as TG_user
 from json import dumps, loads
 from random import shuffle
 from database.database_class import Database
+from classes.exercise_class import Exercise
 
 
 class Storage:
@@ -23,8 +24,8 @@ class Storage:
         self.database.create_table(request)
 
         # таблица с упражнениями
-        request = ("CREATE TABLE if not exists exercise_sets(id integer PRIMARY KEY, "
-                   "user_id integer, exercise_id integer, count integer, weight int, time int)")
+        request = ("CREATE TABLE if not exists exercise_sets(id integer PRIMARY KEY AUTOINCREMENT, "
+                   "user_id integer, exercise_id integer, count integer, weight int, time int, date timestamp)")
         self.database.create_table(request)
 
     def __fill_exercise_names__(self) -> None:
@@ -44,7 +45,6 @@ class Storage:
             request = f"INSERT INTO exercise_names(id, name_ru, name_eng) " \
                       f"VALUES(?, ?, ?) on conflict (id) do update set name_ru = '{name_ru}', name_eng = '{name_eng}'"
             self.database.insert(request, (id, name_ru, name_eng))
-
 
     def __get_user_data__(self, user_id: int) -> tuple:
         request = """SELECT id, name, username, full_name, link, role,  
@@ -89,6 +89,45 @@ class Storage:
         response = self.database.select_fetchall(request)
         return response
 
+    def get_exercise_list(self, language='ru'):
+        """
+        :return: список названий упражнений в зависимости от языка
+        """
+        # todo
+        langs = {
+            'ru': 'name_ru',
+            'eng': 'name_eng'
+        }
+        res = {}
+        if langs.get(language):
+            column_name = langs.get(language)
+        else:
+            column_name = 'name_ru'
+        request = f"SELECT id, {column_name} FROM exercise_names"
+        for i in self.database.select_fetchall(request):
+            # print(i)
+            res['exercise_' + str(i[0])] = i[1]
+        # print(res)
+        return res
+
+    def save_exercise(self, exercise: Exercise):
+        # сохранение упраждения в бд
+        # когда можно сохранить упражнение а когда нет? (каких данных может не хватать)
+        # todo проверять exercise на минимум данных которые нужны для сохранения
+        request = ("INSERT INTO exercise_sets (user_id, exercise_id,count,weight, time, date)"
+                   "VALUES(?, ?, ?, ?, ?, ?)")
+        values = (
+            exercise.user_id, exercise.id, exercise.count,
+            exercise.weight, exercise.time, datetime.now()
+        )
+        self.database.insert(request, values)
+        # print(exercise.show())
+
 
 if __name__ == "__main__":
-    pass
+    memes_db = Database()
+    storage = Storage(memes_db)
+    ex = Exercise(user_id=123, id=112, count=20, name='пресс')
+    storage.save_exercise(ex)
+    # print(storage.get_exercise_list())
+    # pass

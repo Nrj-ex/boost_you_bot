@@ -4,16 +4,11 @@ from dataclasses import dataclass
 @dataclass
 class Exercise:
     user_id: int
-    name: str = ""
+    id: int = 0
     count: int = 0
-    # todo в зависимости от языка
-    # todo возможность настроить свой список упражнений
-    names: tuple = ("Приседания", "Отжимания", "Подтягивания", "Пресс", "Бег")
-
-    def save_exercise(self):
-        # сохранение упраждения в бд
-        # когда можно сохранить упражнение а когда нет? (каких данных может не хватать)
-        print(self)
+    # name: str
+    weight: int = 0
+    time: int = 0
 
     def show(self):
         """
@@ -27,13 +22,35 @@ class Exercise:
     def get_names():
         return "Приседания", "Отжимания", "Подтягивания", "Пресс", "Бег"
 
-    # функция получения всех названий упражнений (дня отрисовки кнопок)
+    # todo перенести данные из таблицы exercise_names в класс
 
-    # функция получения id упражнения по названию
+    # todo сделать маппинги id -> name, name -> id
+
+    # функция получения всех названий упражнений (дня отрисовки кнопок)
+    @staticmethod
+    def get_name_by_id(exercise_id, lang='ru'):
+        names_ru = {
+            1: 'приседания',
+            2: 'отжимания',
+            3: 'подтягивания',
+            4: 'пресс'
+        }
+        names_eng = {
+            1: 'squat',
+            2: 'push-ups',
+            3: 'pull-ups',
+            4: 'abs',
+        }
+        if lang == 'eng':
+            return names_eng.get(exercise_id)
+
+        return names_ru.get(exercise_id)
+
+        # функция получения id упражнения по названию
 
 
 if __name__ == "__main__":
     ex = Exercise(user_id=1)
     ex.name = "Приседания"
     ex.count = 20
-    # print(ex.user_id,ex.name,ex.count,ex.names)
+    print(ex.get_name_by_id(1))

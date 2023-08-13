@@ -31,9 +31,8 @@ memes_db = Database()
 storage = Storage(memes_db)
 
 CANCEL_SAVE_SET, CONFIRM_SAVING, SET_EXERCISE_NAME, WAIT_SOLUTION = range(4)
-# todo получать список из базы и перейти на id, что бы не зависеть от языка
+EXERCISE_KEYS_LIST = storage.get_exercise_list().keys()
 from classes.exercise_class import Exercise
-exercise_list = Exercise.get_names()
 
 
 # Define a few command handlers. These usually take the two arguments update and
@@ -58,17 +57,20 @@ async def choose_exercise(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     # сохранить количество повторений
     if update.message.text.split()[0].isdigit():
         # первое число считается количеством повторений
-        exercise.count = int(update.message.text.split()[0].isdigit())
+        count = int(update.message.text.split()[0])
+        exercise.count = count
     else:
-        # todo ошибка, количество повторений не распознано введите целое число
-        # todo выход из сценария
-        pass
+        # todo логгировать ошибку
+        print('количество повторений не распознано введите целое число')
+        return await cancel_save_set(update, context)
 
     context.user_data['exercise'] = exercise
 
     keyboard = []
-    for exercise in exercise.names:
-        keyboard.append([InlineKeyboardButton(exercise, callback_data=exercise)])
+    # todo язык пока захардкожен, позже брать из настроек пользователя
+    exercises = storage.get_exercise_list(language='ru')
+    for key, exercise in exercises.items():
+        keyboard.append([InlineKeyboardButton(exercise, callback_data=key)])
 
     keyboard.append([InlineKeyboardButton('Cancel', callback_data=str(CANCEL_SAVE_SET))])
 
@@ -81,21 +83,20 @@ async def set_exercise_name(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     # todo сохранение в юзер дату названия упражнения
     user = update.effective_user
     query = update.callback_query
-    if not context.user_data.get('exercise'):
+    exercise = context.user_data.get('exercise')
+    if not exercise:
         # Если нету упражнения выход
         error_text = "Error: Упражнение не найдено.\nПопробуйте заново"
         await context.bot.send_message(chat_id=user.id, text=error_text)
         await cancel_save_set(update, context)
 
         # context.user_data['exercise'].append(query.data)
-    exercise = context.user_data.get('exercise')
-    exercise.name = query.data
+    exercise.id = int(query.data.split('_')[1])
 
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=f"set_exercise_name {query.data}")
-
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=f"set_exercise_id: {exercise.id}")
 
     # клавиатура да/нет
-    # todo добавить кнопку "ввести вес"
+    # todo добавить кнопку "ввести вес" когда нибудь, может быть
     keyboard = [
         [InlineKeyboardButton('Save', callback_data=str(CONFIRM_SAVING))],
         [InlineKeyboardButton('Cancel', callback_data=str(CANCEL_SAVE_SET))],
@@ -103,18 +104,28 @@ async def set_exercise_name(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     # todo выводить выбранное упражнение и количество (exercise.show)
-    print(exercise.show())
-    await context.bot.send_message(chat_id=user.id, text=f'confirm_saving\n{exercise.show()}', reply_markup=reply_markup)
+    await context.bot.send_message(chat_id=user.id, text=f'confirm_saving\n{exercise.show()}',
+                                   reply_markup=reply_markup)
 
     return WAIT_SOLUTION
 
 
-
-
 async def save_set_exercise(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    # todo сохранение в бд
-    await context.bot.send_message(chat_id=update.effective_user.id,
-                                   text=f"save_set_exercise {context.user_data.get('exercise')}")
+    '''
+    :return: сохраняет упражнение в базу
+    '''
+    exercise = context.user_data.get('exercise')
+    # todo проверка что в exercise правильный датакласс
+    if exercise:
+        storage.save_exercise(exercise)
+        # todo сделать человеческий вывод сохраненного упражнения
+        await context.bot.send_message(chat_id=update.effective_user.id,
+                                       text=f"подход сохранен {exercise}")
+
+    else:
+        # todo добавить логгирвоание ошибки
+        await context.bot.send_message(chat_id=update.effective_user.id,
+                                       text=f"ошибка упражнение не найдено, попробуйте снова")
 
     context.user_data.clear()
     return ConversationHandler.END
@@ -127,7 +138,6 @@ async def cancel_save_set(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     context.user_data.clear()
     await context.bot.send_message(chat_id=update.effective_user.id, text="Отмена")
     return ConversationHandler.END
-
 
 
 async def button_options(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -161,8 +171,8 @@ def main() -> None:
         states={
             SET_EXERCISE_NAME:
                 [
-                    # todo брать упражнения из класса
-                    CallbackQueryHandler(set_exercise_name, pattern="^" + exercise + "$") for exercise in exercise_list
+                    CallbackQueryHandler(set_exercise_name, pattern="^" + exercise + "$") for exercise in
+                    EXERCISE_KEYS_LIST
                 ],
             WAIT_SOLUTION:
                 [
