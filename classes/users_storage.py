@@ -1,7 +1,7 @@
 from datetime import datetime
 from telegram import User as TG_user
-from json import dumps, loads
-from random import shuffle
+# from json import dumps, loads
+# from random import shuffle
 from database.database_class import Database
 from classes.exercise_class import Exercise
 
@@ -41,10 +41,10 @@ class Storage:
 
         ]
 
-        for id, name_ru, name_eng in exercise_names:
+        for exercise_id, name_ru, name_eng in exercise_names:
             request = f"INSERT INTO exercise_names(id, name_ru, name_eng) " \
                       f"VALUES(?, ?, ?) on conflict (id) do update set name_ru = '{name_ru}', name_eng = '{name_eng}'"
-            self.database.insert(request, (id, name_ru, name_eng))
+            self.database.insert(request, (exercise_id, name_ru, name_eng))
 
     def __get_user_data__(self, user_id: int) -> tuple:
         request = """SELECT id, name, username, full_name, link, role,  
@@ -73,7 +73,6 @@ class Storage:
         """
         Args:
             user: объект телеграм пользователя
-            set_name: имя набора карт
             role: роль пользователя
 
         Returns: None
