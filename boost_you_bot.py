@@ -220,7 +220,7 @@ def main() -> None:
         states={
             WAIT_SELECT_TIME_PERIOD:
                 [
-                    CallbackQueryHandler(show_user_statistics, pattern="^" + period + "$") for period in
+                    CallbackQueryHandler(show_user_statistics, pattern="^" + str(period) + "$") for period in
                     (DAY, WEEK, MONTH, ALLTIME)
                 ],
 
