@@ -26,20 +26,18 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 from database.database_class import Database
-from classes.users_storage import Storage
+from classes.storage import Storage
 
-memes_db = Database()
-storage = Storage(memes_db)
+boost_you_bot_db = Database()
+storage = Storage(boost_you_bot_db)
 
 (CANCEL_SAVE_SET, CONFIRM_SAVING, SET_EXERCISE_NAME, WAIT_SOLUTION,
  START_SHOW_USER_STATISTICS, WAIT_SELECT_TIME_PERIOD, CANCEL_SHOW_USER_STATISTICS,
- DAY, WEEK, MONTH, ALLTIME) = range(1, 12)
+ DAY, WEEK, MONTH, ALLTIME) = map(chr, range(1, 12))
 EXERCISE_KEYS_LIST = storage.get_exercise_list()
 from classes.exercise_class import Exercise
 
 
-# Define a few command handlers. These usually take the two arguments update and
-# context.
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Send a message when the command /start is issued."""
 
@@ -51,6 +49,12 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     await context.bot.send_message(chat_id=user.id, text=f"Hi!", reply_markup=reply_markup)
+
+
+# async def statistic(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+#     """Send a message when the command /start is issued."""
+#
+#     await select_time_period(update, context)
 
 
 async def choose_exercise(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None | int:
@@ -74,7 +78,7 @@ async def choose_exercise(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     for key, exercise in exercises.items():
         keyboard.append([InlineKeyboardButton(exercise, callback_data=key)])
 
-    keyboard.append([InlineKeyboardButton('Cancel', callback_data=str(CANCEL_SAVE_SET))])
+    keyboard.append([InlineKeyboardButton('Cancel', callback_data=CANCEL_SAVE_SET)])
 
     reply_markup = InlineKeyboardMarkup(keyboard)
     await context.bot.send_message(chat_id=user.id, text=update.message.text, reply_markup=reply_markup)
@@ -95,13 +99,15 @@ async def set_exercise_name(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     exercise.id = int(query.data.split('_')[1])
     exercise.name = EXERCISE_KEYS_LIST.get(query.data)
 
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=f"set_exercise_id: {exercise.id}")
+    # await context.bot.send_message(chat_id=update.effective_chat.id, text=f"set_exercise_id: {exercise.id}")
 
     # клавиатура да/нет
     # todo добавить кнопку "ввести вес" когда нибудь, может быть
     keyboard = [
-        [InlineKeyboardButton('Save', callback_data=str(CONFIRM_SAVING))],
-        [InlineKeyboardButton('Cancel', callback_data=str(CANCEL_SAVE_SET))],
+        [
+            InlineKeyboardButton('❌Cancel', callback_data=CANCEL_SAVE_SET),
+            InlineKeyboardButton('✅Save', callback_data=CONFIRM_SAVING),
+        ]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
@@ -136,24 +142,48 @@ async def cancel_save_set(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     :return: Отмена сохранения сообщения
     """
     context.user_data.clear()
-    await context.bot.send_message(chat_id=update.effective_user.id, text="Отмена")
+    await context.bot.send_message(chat_id=update.effective_user.id, text="Отменено")
     return ConversationHandler.END
 
 
 async def select_time_period(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    keyboard = [
+        [
+            # InlineKeyboardButton('День', callback_data=DAY),
+            # InlineKeyboardButton('Неделя', callback_data=WEEK),
+            # InlineKeyboardButton('Месяц', callback_data=MONTH),
+            InlineKeyboardButton('Всё время', callback_data=ALLTIME),
+        ],
+        [InlineKeyboardButton('Cancel', callback_data=CANCEL_SHOW_USER_STATISTICS)],
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    await context.bot.send_message(chat_id=update.effective_user.id, text='Выберите период', reply_markup=reply_markup)
     # вывести выбор периода
     return WAIT_SELECT_TIME_PERIOD
 
 
 async def show_user_statistics(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    # вывод статистики в зависимости от выбора пользователя
+    statistic = ''
+    if update.callback_query.data == ALLTIME:
+        statistic += 'За все время выполнено:\n'
+        user_statistic = storage.get_user_statistic(update.effective_user, ALLTIME)
+        for exercise_name, count in user_statistic:
+            statistic += f'{exercise_name}: {count}\n'
+
+    # вывод статистики
+    if statistic:
+        await context.bot.send_message(chat_id=update.effective_user.id, text=statistic)
+    else:
+        # статистики нету
+        await context.bot.send_message(chat_id=update.effective_user.id, text='За выбранный период ничего нет!')
     # одна функция что бы получать статискику в которую будет передаваться период для запроса в бд
     return ConversationHandler.END
 
 
 async def cancel_show_user_statistics(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     context.user_data.clear()
-    await context.bot.send_message(chat_id=update.effective_user.id, text="cancel_show_user_statistics")
+    await context.bot.send_message(chat_id=update.effective_user.id, text='Отменено')
     return ConversationHandler.END
 
 
@@ -178,6 +208,7 @@ def main() -> None:
 
     # on different commands - answer in Telegram
     application.add_handler(CommandHandler("start", start))
+    # application.add_handler(CommandHandler("statistic", statistic))
     # todo add command /statistics - старт сценария показа статистики
     # todo добавить меню инлайн кнопки [hepl][my_statistics]
     # application.add_handler(CommandHandler("help", test))
@@ -195,19 +226,19 @@ def main() -> None:
                 ],
             WAIT_SOLUTION:
                 [
-                    CallbackQueryHandler(save_set_exercise, pattern="^" + str(CONFIRM_SAVING) + "$")
+                    CallbackQueryHandler(save_set_exercise, pattern="^" + CONFIRM_SAVING + "$")
                 ],
 
         },
 
         fallbacks=[
-            CallbackQueryHandler(cancel_save_set, pattern="^" + str(CANCEL_SAVE_SET) + "$")
+            CallbackQueryHandler(cancel_save_set, pattern="^" + CANCEL_SAVE_SET + "$")
         ],
         conversation_timeout=600,
     )
     application.add_handler(save_sets)
 
-    # todo вывод статистики упражнений
+    # вывод статистики упражнений
     # кнопка: показать статистику
     # выберите период:
     # [день][неделя][месяц][все время]
@@ -215,19 +246,20 @@ def main() -> None:
     # вывод статистики
     show_user_statistics_handler = ConversationHandler(
         entry_points=[
-            CallbackQueryHandler(select_time_period, pattern="^" + str(START_SHOW_USER_STATISTICS) + "$")
+            CommandHandler("statistic", select_time_period),
+            CallbackQueryHandler(select_time_period, pattern="^" + START_SHOW_USER_STATISTICS + "$")
         ],
         states={
             WAIT_SELECT_TIME_PERIOD:
                 [
-                    CallbackQueryHandler(show_user_statistics, pattern="^" + str(period) + "$") for period in
+                    CallbackQueryHandler(show_user_statistics, pattern="^" + period + "$") for period in
                     (DAY, WEEK, MONTH, ALLTIME)
                 ],
 
         },
 
         fallbacks=[
-            CallbackQueryHandler(cancel_show_user_statistics, pattern="^" + str(CANCEL_SHOW_USER_STATISTICS) + "$")
+            CallbackQueryHandler(cancel_show_user_statistics, pattern="^" + CANCEL_SHOW_USER_STATISTICS + "$")
         ],
         conversation_timeout=600,
     )

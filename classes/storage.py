@@ -83,9 +83,27 @@ class Storage:
         if not user_data:
             self.__add_new_user__(user=user, role=role)
 
-    def get_users_ids(self):
-        request = '''SELECT id FROM users'''
-        response = self.database.select_fetchall(request)
+    # def get_users_ids(self):
+    #     request = '''SELECT id FROM users'''
+    #     response = self.database.select_fetchall(request)
+    #     return response
+
+    def get_user_statistic(self, user: TG_user, period: str) -> tuple:
+        # SELECT en.name_ru, es.user_id, es.exercise_id, SUM(es.count), es.date
+        # FROM exercise_sets es
+        # JOIN exercise_names en ON es.exercise_id = en.id
+        # WHERE user_id = 234864183 AND es.date >= '2023-08-19'
+        # GROUP BY es.exercise_id
+        # todo научиться вычитать количество дней
+
+        request = '''SELECT en.name_ru, SUM(es.count)
+        FROM exercise_sets es 
+        JOIN exercise_names en ON es.exercise_id = en.id 
+        WHERE user_id = ? 
+        GROUP BY es.exercise_id'''
+
+        response = self.database.select_fetchall(request, values=(user.id,))
+        print(response)
         return response
 
     def get_exercise_list(self, language='ru'):

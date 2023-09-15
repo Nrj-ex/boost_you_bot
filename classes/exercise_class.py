@@ -16,7 +16,7 @@ class Exercise:
         """
 
         #todo сделать вывод в зависимости от языка (возможно прокидывать язык пользователя в упражнении)
-        s = f'Упражнение:{self.name}\nКоличество:{self.count}'
+        s = f'Упражнение: {self.name}\nКоличество: {self.count}'
         if self.weight:
             s += f'\nВес: {self.weight} кг'
         return s

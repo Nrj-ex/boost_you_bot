@@ -31,10 +31,10 @@ class Database:
         self.con.commit()
         cursor.close()
 
-    def select_fetchall(self, request: str) -> list:
+    def select_fetchall(self, request: str, values: tuple = ()) -> list:
         cursor = self.con.cursor()
 
-        response = cursor.execute(request).fetchall()
+        response = cursor.execute(request, values).fetchall()
         cursor.close()
         return response
 
