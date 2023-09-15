@@ -36,18 +36,25 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     user = update.effective_user
     storage.add_user(user=user)
-    keyboard = [
-        [InlineKeyboardButton('start', callback_data='start')],
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
 
-    await context.bot.send_message(chat_id=user.id, text=f"Hi!", reply_markup=reply_markup)
+    await context.bot.send_message(chat_id=user.id, text=f"Hi!")
+    await help(update, context)
 
 
-# async def statistic(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-#     """Send a message when the command /start is issued."""
-#
-#     await select_time_period(update, context)
+async def help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Send a message when the command /help is issued."""
+
+    user = update.effective_user
+    text = '''Бот сохраняет выполненные подходы упражнений и выводит статистику упражнений\n'''
+
+    text += 'Список поддерживаемых упражнений:\n'
+
+    for i, e in enumerate(storage.get_exercise_list().values(), start=1):
+        text += f'{i}. {e}\n'
+    text += '\nДля сохранения подхода отправьте боту количество выполненных упражнений(число), затем выберите упражнение и нажмите сохранить.\n\n'
+    text += '/statistic - показать статистику'
+
+    await context.bot.send_message(chat_id=user.id, text=text)
 
 
 async def choose_exercise(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None | int:
@@ -134,6 +141,7 @@ async def cancel_save_set(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     """
     :return: Отмена сохранения сообщения
     """
+    await update.callback_query.delete_message()
     context.user_data.clear()
     await context.bot.send_message(chat_id=update.effective_user.id, text="Отменено")
     return ConversationHandler.END
@@ -177,6 +185,7 @@ async def show_user_statistics(update: Update, context: ContextTypes.DEFAULT_TYP
 
 async def cancel_show_user_statistics(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     context.user_data.clear()
+    await update.callback_query.delete_message()
     await context.bot.send_message(chat_id=update.effective_user.id, text='Отменено')
     return ConversationHandler.END
 
@@ -184,13 +193,10 @@ async def cancel_show_user_statistics(update: Update, context: ContextTypes.DEFA
 async def button_options(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Parses the CallbackQuery and updates the message text."""
     query = update.callback_query
+    await query.delete_message()
 
-    await query.answer()
+    # await query.answer()
 
-    # if query.data in exercise_list:
-
-    #     await test(update, context)
-    #     pass
 
 
 def main() -> None:
@@ -202,7 +208,7 @@ def main() -> None:
 
     # on different commands - answer in Telegram
     application.add_handler(CommandHandler("start", start))
-    # application.add_handler(CommandHandler("statistic", statistic))
+    application.add_handler(CommandHandler("help", help))
     # todo add command /statistics - старт сценария показа статистики
     # todo добавить меню инлайн кнопки [hepl][my_statistics]
     # application.add_handler(CommandHandler("help", test))
@@ -232,11 +238,6 @@ def main() -> None:
     )
     application.add_handler(save_sets)
 
-    # вывод статистики упражнений
-    # кнопка: показать статистику
-    # выберите период:
-    # [день][неделя][месяц][все время]
-    # [отмена]
     # вывод статистики
     show_user_statistics_handler = ConversationHandler(
         entry_points=[
