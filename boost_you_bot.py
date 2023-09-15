@@ -167,12 +167,13 @@ async def show_user_statistics(update: Update, context: ContextTypes.DEFAULT_TYP
     statistic = ''
     if update.callback_query.data == ALLTIME:
         statistic += 'За все время выполнено:\n'
-        user_statistic = storage.get_user_statistic(update.effective_user, ALLTIME)
-        for exercise_name, count in user_statistic:
-            statistic += f'{exercise_name}: {count}\n'
+
+    user_statistic = storage.get_user_statistic(update.effective_user, update.callback_query.data)
+    for exercise_name, count in user_statistic:
+        statistic += f'{exercise_name}: {count}\n'
 
     # вывод статистики
-    if statistic:
+    if user_statistic:
         await context.bot.send_message(chat_id=update.effective_user.id, text=statistic)
     else:
         # статистики нету

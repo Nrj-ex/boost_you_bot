@@ -88,13 +88,19 @@ class Storage:
     #     response = self.database.select_fetchall(request)
     #     return response
 
-    def get_user_statistic(self, user: TG_user, period: str) -> tuple:
+    def get_user_statistic(self, user: TG_user, period: str) -> list:
+        """
+        :param user:
+        :param period:  callback_query.data по которой нужно понимать за какой период отдавать данные
+        :return: [(название упражнения, количество), ...]
+        """
         # SELECT en.name_ru, es.user_id, es.exercise_id, SUM(es.count), es.date
         # FROM exercise_sets es
         # JOIN exercise_names en ON es.exercise_id = en.id
         # WHERE user_id = 234864183 AND es.date >= '2023-08-19'
         # GROUP BY es.exercise_id
         # todo научиться вычитать количество дней
+        # todo разруливать period (callback_query.data) если прийдет не поддерживаемый (венруть [])
 
         request = '''SELECT en.name_ru, SUM(es.count)
         FROM exercise_sets es 
@@ -103,7 +109,6 @@ class Storage:
         GROUP BY es.exercise_id'''
 
         response = self.database.select_fetchall(request, values=(user.id,))
-        print(response)
         return response
 
     def get_exercise_list(self, language='ru'):
