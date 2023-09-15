@@ -1,4 +1,4 @@
-import logging
+from utils.logger import logger
 import config
 
 from telegram import __version__ as TG_VER
@@ -17,13 +17,6 @@ if __version_info__ < (20, 0, 0, "alpha", 1):
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, ContextTypes, AIORateLimiter, \
     CallbackQueryHandler, MessageHandler, filters, ConversationHandler
-
-# Enable logging
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.WARNING,
-)
-# filename="bot_log.log"
-logger = logging.getLogger(__name__)
 
 from database.database_class import Database
 from classes.storage import Storage
