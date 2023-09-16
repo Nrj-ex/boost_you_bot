@@ -88,10 +88,10 @@ class Storage:
     #     response = self.database.select_fetchall(request)
     #     return response
 
-    def get_user_statistic(self, user: TG_user, period: str) -> list:
+    def get_user_statistic(self, user: TG_user, period: int) -> list:
         """
         :param user:
-        :param period:  callback_query.data по которой нужно понимать за какой период отдавать данные
+        :param period:  количество дней за которое нужно достать статистику
         :return: [(название упражнения, количество), ...]
         """
         # SELECT en.name_ru, es.user_id, es.exercise_id, SUM(es.count), es.date
@@ -99,8 +99,11 @@ class Storage:
         # JOIN exercise_names en ON es.exercise_id = en.id
         # WHERE user_id = 234864183 AND es.date >= '2023-08-19'
         # GROUP BY es.exercise_id
-        # todo научиться вычитать количество дней
-        # todo разруливать period (callback_query.data) если прийдет не поддерживаемый (венруть [])
+        # дата для запроса в бд alltime
+        # from datetime import datetime, timedelta
+        # delta = timedelta(days=-10000)
+        # print((datetime.now() + delta).date())
+        # todo вычислять дату и добавить ее в запрос
 
         request = '''SELECT en.name_ru, SUM(es.count)
         FROM exercise_sets es 

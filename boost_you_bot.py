@@ -26,7 +26,7 @@ storage = Storage(boost_you_bot_db)
 
 (CANCEL_SAVE_SET, CONFIRM_SAVING, SET_EXERCISE_NAME, WAIT_SOLUTION,
  START_SHOW_USER_STATISTICS, WAIT_SELECT_TIME_PERIOD, CANCEL_SHOW_USER_STATISTICS,
- DAY, WEEK, MONTH, ALLTIME) = map(chr, range(1, 12))
+ SELECTED_PERIOD) = map(chr, range(1, 9))
 EXERCISE_KEYS_LIST = storage.get_exercise_list()
 from classes.exercise_class import Exercise
 
@@ -158,7 +158,7 @@ async def select_time_period(update: Update, context: ContextTypes.DEFAULT_TYPE)
             # InlineKeyboardButton('День', callback_data=DAY),
             # InlineKeyboardButton('Неделя', callback_data=WEEK),
             # InlineKeyboardButton('Месяц', callback_data=MONTH),
-            InlineKeyboardButton('Всё время', callback_data=ALLTIME),
+            InlineKeyboardButton('Всё время', callback_data=SELECTED_PERIOD + '99999'),
         ],
         [InlineKeyboardButton('Cancel', callback_data=CANCEL_SHOW_USER_STATISTICS)],
     ]
@@ -171,11 +171,15 @@ async def select_time_period(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
 async def show_user_statistics(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     statistic = ''
-    # todo перейти на одну константу + количество дней за которые нужно взять статистику
-    if update.callback_query.data == ALLTIME:
+    selected_period = update.callback_query.data.replace(SELECTED_PERIOD, '', 1)
+    if not selected_period.isdigit():
+        await context.bot.send_message(chat_id=update.effective_user.id, text='Не удалось получить период времени')
+        return ConversationHandler.END
+    selected_period = int(selected_period)
+    if selected_period >= 99999:
         statistic += f'{update.effective_user.name} за все время выполнил(а):\n'
 
-    user_statistic = storage.get_user_statistic(update.effective_user, update.callback_query.data)
+    user_statistic = storage.get_user_statistic(update.effective_user, selected_period)
     for exercise_name, count in user_statistic:
         statistic += f'{exercise_name}: {count}\n'
 
@@ -252,8 +256,7 @@ def main() -> None:
         states={
             WAIT_SELECT_TIME_PERIOD:
                 [
-                    CallbackQueryHandler(show_user_statistics, pattern="^" + period + "$") for period in
-                    (DAY, WEEK, MONTH, ALLTIME)
+                    CallbackQueryHandler(show_user_statistics, pattern="^" + SELECTED_PERIOD)
                 ],
         },
 
