@@ -171,12 +171,15 @@ async def select_time_period(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
 async def show_user_statistics(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     statistic = ''
+    # todo перейти на одну константу + количество дней за которые нужно взять статистику
     if update.callback_query.data == ALLTIME:
-        statistic += 'За все время выполнено:\n'
+        statistic += f'{update.effective_user.name} за все время выполнил(а):\n'
 
     user_statistic = storage.get_user_statistic(update.effective_user, update.callback_query.data)
     for exercise_name, count in user_statistic:
         statistic += f'{exercise_name}: {count}\n'
+
+    statistic += '\n© @Boostyou_bot'
 
     # вывод статистики
     if user_statistic:
