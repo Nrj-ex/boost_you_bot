@@ -65,6 +65,9 @@ async def choose_exercise(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     if update.message.text.split()[0].isdigit():
         # первое число считается количеством повторений
         count = int(update.message.text.split()[0])
+        if count > 999:
+            await context.bot.send_message(chat_id=user.id, text='Обманываешь сам себя')
+            return ConversationHandler.END
         exercise.count = count
     else:
         logger.error(f'''Количество повторений не найдено! message_text: "{update.message.text}"''')
@@ -198,7 +201,6 @@ async def button_options(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     # await query.answer()
 
 
-
 def main() -> None:
     """Start the bot."""
     # Create the Application and pass it your bot's token.
@@ -209,9 +211,8 @@ def main() -> None:
     # on different commands - answer in Telegram
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("help", help))
-    # todo add command /statistics - старт сценария показа статистики
+
     # todo добавить меню инлайн кнопки [hepl][my_statistics]
-    # application.add_handler(CommandHandler("help", test))
 
     # сохранить упражнение
     save_sets = ConversationHandler(
@@ -230,7 +231,6 @@ def main() -> None:
                 ],
 
         },
-
         fallbacks=[
             CallbackQueryHandler(cancel_save_set, pattern="^" + CANCEL_SAVE_SET + "$")
         ],
@@ -250,7 +250,6 @@ def main() -> None:
                     CallbackQueryHandler(show_user_statistics, pattern="^" + period + "$") for period in
                     (DAY, WEEK, MONTH, ALLTIME)
                 ],
-
         },
 
         fallbacks=[
@@ -260,10 +259,8 @@ def main() -> None:
     )
     application.add_handler(show_user_statistics_handler)
 
-    # application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, start))
     application.add_handler(CallbackQueryHandler(button_options))
 
-    # Run the bot until the user presses Ctrl-C
     application.run_polling()
 
 
