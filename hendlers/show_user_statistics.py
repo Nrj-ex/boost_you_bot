@@ -59,6 +59,7 @@ async def show_user_statistics(update: Update, context: ContextTypes.DEFAULT_TYP
 
 
 async def show_user_statistics_by_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    await update.callback_query.delete_message()
     number_days = update.callback_query.data.replace(SELECTED_PERIOD, '', 1)
     if not number_days.isdigit():
         await context.bot.send_message(chat_id=update.effective_user.id, text='Не удалось получить период времени')
