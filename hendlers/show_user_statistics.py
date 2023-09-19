@@ -1,8 +1,9 @@
-from init_storage import storage
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (CommandHandler, ContextTypes, CallbackQueryHandler,
                           filters, ConversationHandler)
 from constants import START_SHOW_USER_STATISTICS, WAIT_SELECT_TIME_PERIOD, CANCEL_SHOW_USER_STATISTICS, SELECTED_PERIOD
+
+from init_storage import storage
 
 
 async def select_time_period(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
