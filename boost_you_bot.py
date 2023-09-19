@@ -18,11 +18,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, ContextTypes, AIORateLimiter, \
     CallbackQueryHandler, MessageHandler, filters, ConversationHandler
 
-from database.database_class import Database
-from classes.storage import Storage
-
-boost_you_bot_db = Database()
-storage = Storage(boost_you_bot_db)
+from init_storage import storage
 
 (CANCEL_SAVE_SET, CONFIRM_SAVING, SET_EXERCISE_NAME, WAIT_SOLUTION,
  START_SHOW_USER_STATISTICS, WAIT_SELECT_TIME_PERIOD, CANCEL_SHOW_USER_STATISTICS,
@@ -30,33 +26,8 @@ storage = Storage(boost_you_bot_db)
 EXERCISE_KEYS_LIST = storage.get_exercise_list()
 from classes.exercise_class import Exercise
 
-
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Send a message when the command /start is issued."""
-
-    user = update.effective_user
-    storage.add_user(user=user)
-
-    await context.bot.send_message(chat_id=user.id, text=f"Hi!")
-    await help(update, context)
-
-
-async def help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Send a message when the command /help is issued."""
-
-    user = update.effective_user
-    storage.add_user(user=user)
-    text = '''Бот заменяет тетрадку в которую вы записываете выполненные упражнения после каждого подхода. Список упражнений максимально сокращен и содержит только базовые упражнения которые доступны всем!\n'''
-
-    text += 'Список поддерживаемых упражнений:\n'
-
-    for i, e in enumerate(storage.get_exercise_list().values(), start=1):
-        text += f'{i}. {e}\n'
-    text += '\nДля сохранения подхода отправьте боту количество выполненных упражнений(число), затем выберите упражнение и нажмите сохранить.\n\n'
-    text += '/statistic - показать статистику\n'
-    text += '\nВопросы, предложения, безграничную благодарность и т д @nrj_ex'
-
-    await context.bot.send_message(chat_id=user.id, text=text)
+from hendlers.start import start
+from hendlers.help import help
 
 
 async def choose_exercise(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None | int:
