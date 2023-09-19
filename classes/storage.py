@@ -1,9 +1,7 @@
-from datetime import datetime
 from telegram import User as TG_user
-# from json import dumps, loads
-# from random import shuffle
 from database.database_class import Database
 from classes.exercise_class import Exercise
+from datetime import datetime
 
 
 class Storage:
@@ -88,30 +86,19 @@ class Storage:
     #     response = self.database.select_fetchall(request)
     #     return response
 
-    def get_user_statistic(self, user: TG_user, period: int) -> list:
+    def get_user_statistic(self, user_id: int, start_data: int) -> list:
         """
-        :param user:
-        :param period:  количество дней за которое нужно достать статистику
+        :param user_id:
+        :param start_data:  количество дней за которое нужно достать статистику
         :return: [(название упражнения, количество), ...]
         """
-        # SELECT en.name_ru, es.user_id, es.exercise_id, SUM(es.count), es.date
-        # FROM exercise_sets es
-        # JOIN exercise_names en ON es.exercise_id = en.id
-        # WHERE user_id = 234864183 AND es.date >= '2023-08-19'
-        # GROUP BY es.exercise_id
-        # дата для запроса в бд alltime
-        # from datetime import datetime, timedelta
-        # delta = timedelta(days=-10000)
-        # print((datetime.now() + delta).date())
-        # todo вычислять дату и добавить ее в запрос
-
         request = '''SELECT en.name_ru, SUM(es.count)
         FROM exercise_sets es 
         JOIN exercise_names en ON es.exercise_id = en.id 
-        WHERE user_id = ? 
+        WHERE user_id = ? AND es.date >= ?
         GROUP BY es.exercise_id'''
 
-        response = self.database.select_fetchall(request, values=(user.id,))
+        response = self.database.select_fetchall(request, values=(user_id, start_data))
         return response
 
     def get_exercise_list(self, language='ru'):
@@ -136,7 +123,7 @@ class Storage:
         return res
 
     def save_exercise(self, exercise: Exercise):
-        # сохранение упраждения в бд
+        # сохранение упражнения в бд
         # когда можно сохранить упражнение а когда нет? (каких данных может не хватать)
         # todo проверять exercise на минимум данных которые нужны для сохранения
         request = ("INSERT INTO exercise_sets (user_id, exercise_id,count,weight, time, date)"

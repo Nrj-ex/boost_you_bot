@@ -42,8 +42,8 @@ def main() -> None:
     # on different commands - answer in Telegram
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("help", help))
-    application.add_handler(save_set_handler)
     application.add_handler(show_user_statistics_handler)
+    application.add_handler(save_set_handler)
     application.add_handler(CallbackQueryHandler(button_options))
 
     application.run_polling()

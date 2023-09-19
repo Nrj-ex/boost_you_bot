@@ -1,39 +1,49 @@
+from utils.logger import logger
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (CommandHandler, ContextTypes, CallbackQueryHandler,
-                          filters, ConversationHandler)
+                          filters, ConversationHandler, MessageHandler)
 from constants import START_SHOW_USER_STATISTICS, WAIT_SELECT_TIME_PERIOD, CANCEL_SHOW_USER_STATISTICS, SELECTED_PERIOD
+from datetime import datetime, timedelta
 
 from init_storage import storage
 
 
 async def select_time_period(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     keyboard = [
+        [InlineKeyboardButton('❌Cancel', callback_data=CANCEL_SHOW_USER_STATISTICS)],
         [
-            # InlineKeyboardButton('День', callback_data=DAY),
-            # InlineKeyboardButton('Неделя', callback_data=WEEK),
-            # InlineKeyboardButton('Месяц', callback_data=MONTH),
+            InlineKeyboardButton('За месяц', callback_data=SELECTED_PERIOD + '30'),
             InlineKeyboardButton('Всё время', callback_data=SELECTED_PERIOD + '99999'),
         ],
-        [InlineKeyboardButton('Cancel', callback_data=CANCEL_SHOW_USER_STATISTICS)],
+        [
+            InlineKeyboardButton('За неделю', callback_data=SELECTED_PERIOD + '7'),
+            InlineKeyboardButton('Сегодня', callback_data=SELECTED_PERIOD + '0'),
+        ],
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
-    await context.bot.send_message(chat_id=update.effective_user.id, text='Выберите период', reply_markup=reply_markup)
+    await context.bot.send_message(chat_id=update.effective_user.id,
+                                   text='Выберите период или введите количество дней за который хотите получить статистику (0: сегодня)',
+                                   reply_markup=reply_markup)
     # вывести выбор периода
     return WAIT_SELECT_TIME_PERIOD
 
 
-async def show_user_statistics(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def show_user_statistics(update: Update, context: ContextTypes.DEFAULT_TYPE, selected_period: int) -> int:
+    delta = timedelta(days=-selected_period)
+    start_data = (datetime.now() + delta).date()
     statistic = ''
-    selected_period = update.callback_query.data.replace(SELECTED_PERIOD, '', 1)
-    if not selected_period.isdigit():
-        await context.bot.send_message(chat_id=update.effective_user.id, text='Не удалось получить период времени')
-        return ConversationHandler.END
-    selected_period = int(selected_period)
-    if selected_period >= 99999:
-        statistic += f'{update.effective_user.name} за все время выполнил(а):\n'
 
-    user_statistic = storage.get_user_statistic(update.effective_user, selected_period)
+    if selected_period >= 99999:
+        statistic += f'За все время\n'
+    elif selected_period == 0:
+        statistic += f'За сегодня\n'
+    else:
+        statistic += f'C {start_data} по {datetime.now().date()}\n'
+
+    statistic += f'{update.effective_user.name} выполнил(а):\n'
+
+    user_statistic = storage.get_user_statistic(update.effective_user.id, start_data)
     for exercise_name, count in user_statistic:
         statistic += f'{exercise_name}: {count}\n'
 
@@ -45,8 +55,29 @@ async def show_user_statistics(update: Update, context: ContextTypes.DEFAULT_TYP
     else:
         # статистики нету
         await context.bot.send_message(chat_id=update.effective_user.id, text='За выбранный период ничего нет!')
-    # одна функция что бы получать статискику в которую будет передаваться период для запроса в бд
     return ConversationHandler.END
+
+
+async def show_user_statistics_by_button(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    number_days = update.callback_query.data.replace(SELECTED_PERIOD, '', 1)
+    if not number_days.isdigit():
+        await context.bot.send_message(chat_id=update.effective_user.id, text='Не удалось получить период времени')
+        logger.error(f'''Не удалось получить период времени: "{update.message.text}"''')
+        return ConversationHandler.END
+    number_days = int(number_days)
+    return await show_user_statistics(update, context, number_days)
+
+
+async def show_user_statistics_by_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    # первое число считается количеством дней за которое нужно отдать статистику
+    if update.message.text.split()[0].isdigit():
+        number_days = int(update.message.text.split()[0])
+    else:
+        await context.bot.send_message(chat_id=update.effective_user.id, text='Количество дней не распознано!')
+        logger.error(f'''Количество дней не распознано! message_text: "{update.message.text}"''')
+        return ConversationHandler.END
+
+    return await show_user_statistics(update, context, number_days)
 
 
 async def cancel_show_user_statistics(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -65,7 +96,8 @@ show_user_statistics_handler = ConversationHandler(
     states={
         WAIT_SELECT_TIME_PERIOD:
             [
-                CallbackQueryHandler(show_user_statistics, pattern="^" + SELECTED_PERIOD)
+                CallbackQueryHandler(show_user_statistics_by_button, pattern="^" + SELECTED_PERIOD),
+                MessageHandler(filters.TEXT & ~filters.COMMAND, show_user_statistics_by_text),
             ],
     },
 
