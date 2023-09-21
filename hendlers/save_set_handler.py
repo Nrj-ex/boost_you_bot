@@ -25,7 +25,8 @@ async def choose_exercise(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         exercise.count = count
     else:
         logger.error(f'''Количество повторений не найдено! message_text: "{update.message.text}"''')
-        return await cancel_save_set(update, context)
+        await context.bot.send_message(chat_id=user.id, text='Количество не распознано!\nВведите количество выполненных повторений(цифрами)')
+        return ConversationHandler.END
 
     context.user_data['exercise'] = exercise
 
