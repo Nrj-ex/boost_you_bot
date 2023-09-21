@@ -36,7 +36,7 @@ async def choose_exercise(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     for key, exercise in exercises.items():
         keyboard.append([InlineKeyboardButton(exercise, callback_data=key)])
 
-    keyboard.append([InlineKeyboardButton('Cancel', callback_data=CANCEL_SAVE_SET)])
+    keyboard.append([InlineKeyboardButton('❌Cancel', callback_data=CANCEL_SAVE_SET)])
 
     reply_markup = InlineKeyboardMarkup(keyboard)
     await context.bot.send_message(chat_id=user.id, text=update.message.text, reply_markup=reply_markup)
