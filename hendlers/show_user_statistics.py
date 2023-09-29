@@ -43,9 +43,11 @@ async def show_user_statistics(update: Update, context: ContextTypes.DEFAULT_TYP
 
     statistic += f'{update.effective_user.name} выполнил(а):\n'
 
+    statistic += f'Название: количество / подходы \n'
+
     user_statistic = storage.get_user_statistic(update.effective_user.id, start_data)
-    for exercise_name, count in user_statistic:
-        statistic += f'{exercise_name}: {count}\n'
+    for exercise_name, count, sets  in user_statistic:
+        statistic += f'{exercise_name}: {count} / {sets}\n'
 
     statistic += '\n© @Boostyou_bot'
 

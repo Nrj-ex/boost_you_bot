@@ -32,11 +32,11 @@ class Storage:
         при каждом запуске перезаписывается
         """
         exercise_names = [
-            (1, '🦵🦵приседания', 'squat'),
-            (2, '✋🤚отжимания', 'push-ups'),
-            (3, '✊✊подтягивания', 'pull-ups'),
-            (4, '🎲🎲пресс', 'abs'),
-            (5, '||брусья', 'dips'),
+            (1, 'приседания', 'squat'),
+            (2, 'отжимания', 'push-ups'),
+            (3, 'подтягивания', 'pull-ups'),
+            (4, 'пресс', 'abs'),
+            (5, 'брусья', 'dips'),
         ]
 
         for exercise_id, name_ru, name_eng in exercise_names:
@@ -90,13 +90,13 @@ class Storage:
         """
         :param user_id:
         :param start_data:  количество дней за которое нужно достать статистику
-        :return: [(название упражнения, количество), ...]
+        :return: [(название упражнения, общее количество повторений), ...]
         """
-        request = '''SELECT en.name_ru, SUM(es.count)
-        FROM exercise_sets es 
-        JOIN exercise_names en ON es.exercise_id = en.id 
-        WHERE user_id = ? AND es.date >= ?
-        GROUP BY es.exercise_id'''
+        request = '''SELECT en.name_ru as 'exercise_name', SUM(es.count) as 'count', count(es.count) as 'sets'
+FROM exercise_sets es 
+JOIN exercise_names en ON es.exercise_id = en.id 
+WHERE user_id = ? AND es.date >= ?
+GROUP BY es.exercise_id'''
 
         response = self.database.select_fetchall(request, values=(user_id, start_data))
         return response
