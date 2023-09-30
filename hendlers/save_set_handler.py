@@ -35,7 +35,12 @@ async def choose_exercise(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     # todo язык пока захардкожен, позже брать из настроек пользователя
     exercises = storage.get_exercise_list(language='ru')
     for key, exercise in exercises.items():
-        keyboard.append([InlineKeyboardButton(exercise, callback_data=key)])
+        if not keyboard or len(keyboard) < 2 or len(keyboard[-1]) % 2 == 0:
+            keyboard.append([InlineKeyboardButton(exercise, callback_data=key)])
+        else:
+            keyboard[-1].append(InlineKeyboardButton(exercise, callback_data=key))
+            # отжимания и прес мне удобнее справа ;)
+            keyboard[-1] = keyboard[-1][::-1]
 
     keyboard.append([InlineKeyboardButton('❌Cancel', callback_data=CANCEL_SAVE_SET)])
 
@@ -64,8 +69,8 @@ async def set_exercise_name(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     # todo добавить кнопку "ввести вес" когда нибудь, может быть
     keyboard = [
         [
-            InlineKeyboardButton('❌Cancel', callback_data=CANCEL_SAVE_SET),
-            InlineKeyboardButton('✅Save', callback_data=CONFIRM_SAVING),
+            InlineKeyboardButton('❌NO', callback_data=CANCEL_SAVE_SET),
+            InlineKeyboardButton('✅YES', callback_data=CONFIRM_SAVING),
         ]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -85,7 +90,7 @@ async def save_set_exercise(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     if exercise and isinstance(exercise, Exercise):
         storage.save_exercise(exercise)
         await context.bot.send_message(chat_id=update.effective_user.id,
-                                       text=f"Подход сохранен")
+                                       text=f"Подход: {exercise.show()}\nСохранён!")
 
     else:
         logger.error(f'''Упражнение не найдено: context.user_data:"{context.user_data}"''')
