@@ -15,7 +15,6 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes, AIORateLimiter, \
     CallbackQueryHandler
 
-from utils import logger
 import config
 from hendlers import start
 from hendlers import help
