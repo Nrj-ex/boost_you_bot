@@ -2,7 +2,7 @@ from telegram import User as TG_user
 from datetime import datetime
 
 from database import Database
-from classes import Exercise
+from classes.exercise_class import Exercise
 
 
 class Storage:

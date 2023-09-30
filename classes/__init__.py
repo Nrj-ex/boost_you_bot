@@ -1,2 +1,2 @@
-from classes.storage import Storage
-from classes.exercise_class import Exercise
+from .storage import Storage
+from .exercise_class import Exercise
