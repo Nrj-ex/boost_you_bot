@@ -1,6 +1,6 @@
 from telegram import Update
 from telegram.ext import ContextTypes
-from init_storage import storage
+from loader import storage
 
 
 async def help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

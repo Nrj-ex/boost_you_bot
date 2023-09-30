@@ -1,6 +1,3 @@
-from utils.logger import logger
-import config
-
 from telegram import __version__ as TG_VER
 
 try:
@@ -18,15 +15,17 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes, AIORateLimiter, \
     CallbackQueryHandler
 
-from hendlers.start import start
-from hendlers.help import help
-from hendlers.about import about
-from hendlers.show_user_statistics import show_user_statistics_handler
-from hendlers.save_set_handler import save_set_handler
+from utils import logger
+import config
+from hendlers import start
+from hendlers import help
+from hendlers import about
+from hendlers import show_user_statistics_handler
+from hendlers import save_set_handler
 
 
 async def button_options(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Parses the CallbackQuery and updates the message text."""
+    """Parses the CallbackQuery"""
     query = update.callback_query
     await query.delete_message()
     await context.bot.send_message(chat_id=update.effective_user.id, text='Кнопка устарела и была удалена')
@@ -34,7 +33,6 @@ async def button_options(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
 def main() -> None:
     """Start the bot."""
-    # Create the Application and pass it your bot's token.
 
     application = Application.builder().token(config.token).rate_limiter(
         AIORateLimiter(overall_max_rate=10, max_retries=3)).build()

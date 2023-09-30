@@ -1,12 +1,12 @@
-from utils.logger import logger
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (MessageHandler, ContextTypes, CallbackQueryHandler,
                           filters, ConversationHandler)
 
 from constants import CANCEL_SAVE_SET, CONFIRM_SAVING, SET_EXERCISE_NAME, WAIT_SOLUTION
-from classes.exercise_class import Exercise
 
-from init_storage import storage
+from classes import Exercise
+from loader import storage
+from utils import logger
 
 EXERCISE_KEYS_LIST = storage.get_exercise_list()
 
@@ -25,7 +25,8 @@ async def choose_exercise(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         exercise.count = count
     else:
         logger.error(f'''Количество повторений не найдено! message_text: "{update.message.text}"''')
-        await context.bot.send_message(chat_id=user.id, text='Количество не распознано!\nВведите количество выполненных повторений(цифрами)')
+        await context.bot.send_message(chat_id=user.id,
+                                       text='Количество не распознано!\nВведите количество выполненных повторений(цифрами)')
         return ConversationHandler.END
 
     context.user_data['exercise'] = exercise

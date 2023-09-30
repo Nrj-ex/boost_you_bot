@@ -22,5 +22,4 @@ async def about(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 Инструкция: /help
 '''
 
-
     await context.bot.send_message(chat_id=user.id, text=text)

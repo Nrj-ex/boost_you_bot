@@ -1,11 +1,11 @@
-from utils.logger import logger
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (CommandHandler, ContextTypes, CallbackQueryHandler,
                           filters, ConversationHandler, MessageHandler)
-from constants import START_SHOW_USER_STATISTICS, WAIT_SELECT_TIME_PERIOD, CANCEL_SHOW_USER_STATISTICS, SELECTED_PERIOD
 from datetime import datetime, timedelta
 
-from init_storage import storage
+from constants import START_SHOW_USER_STATISTICS, WAIT_SELECT_TIME_PERIOD, CANCEL_SHOW_USER_STATISTICS, SELECTED_PERIOD
+from loader import storage
+from utils import logger
 
 
 async def select_time_period(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -46,7 +46,7 @@ async def show_user_statistics(update: Update, context: ContextTypes.DEFAULT_TYP
     statistic += f'Название: количество / подходы \n'
 
     user_statistic = storage.get_user_statistic(update.effective_user.id, start_data)
-    for exercise_name, count, sets  in user_statistic:
+    for exercise_name, count, sets in user_statistic:
         statistic += f'{exercise_name}: {count} / {sets}\n'
 
     statistic += '\n© @Boostyou_bot'
