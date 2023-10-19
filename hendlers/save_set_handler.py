@@ -45,7 +45,7 @@ async def choose_exercise(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     keyboard.append([InlineKeyboardButton('❌Cancel', callback_data=CANCEL_SAVE_SET)])
 
     reply_markup = InlineKeyboardMarkup(keyboard)
-    await context.bot.send_message(chat_id=user.id, text=update.message.text, reply_markup=reply_markup)
+    await context.bot.send_message(chat_id=user.id, text=f'Количество: {exercise.count}', reply_markup=reply_markup)
     return SET_EXERCISE_NAME
 
 
@@ -59,11 +59,8 @@ async def set_exercise_name(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         await context.bot.send_message(chat_id=user.id, text=error_text)
         await cancel_save_set(update, context)
 
-        # context.user_data['exercise'].append(query.data)
     exercise.id = int(query.data.split('_')[1])
     exercise.name = EXERCISE_KEYS_LIST.get(query.data)
-
-    # await context.bot.send_message(chat_id=update.effective_chat.id, text=f"set_exercise_id: {exercise.id}")
 
     # клавиатура да/нет
     # todo добавить кнопку "ввести вес" когда нибудь, может быть
