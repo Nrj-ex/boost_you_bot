@@ -14,7 +14,7 @@ EXERCISE_KEYS_LIST = storage.get_exercise_list()
 async def choose_exercise(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None | int:
     """Send a message when the command /help is issued."""
     user = update.effective_user
-    exercise = Exercise(user_id=user.id)
+    user_exercise = Exercise(user_id=user.id)
     # сохранить количество повторений
     if update.message.text.split()[0].isdigit():
         # первое число считается количеством повторений
@@ -22,14 +22,14 @@ async def choose_exercise(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         if count > 999:
             await context.bot.send_message(chat_id=user.id, text='Обманываешь сам себя')
             return ConversationHandler.END
-        exercise.count = count
+        user_exercise.count = count
     else:
         logger.error(f'''Количество повторений не найдено! message_text: "{update.message.text}"''')
         await context.bot.send_message(chat_id=user.id,
                                        text='Количество не распознано!\nВведите количество выполненных повторений(цифрами)')
         return ConversationHandler.END
 
-    context.user_data['exercise'] = exercise
+    context.user_data['exercise'] = user_exercise
 
     keyboard = []
     # todo язык пока захардкожен, позже брать из настроек пользователя
@@ -45,7 +45,7 @@ async def choose_exercise(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     keyboard.append([InlineKeyboardButton('❌Cancel', callback_data=CANCEL_SAVE_SET)])
 
     reply_markup = InlineKeyboardMarkup(keyboard)
-    await context.bot.send_message(chat_id=user.id, text=f'Количество: {exercise.count}', reply_markup=reply_markup)
+    await context.bot.send_message(chat_id=user.id, text=f'Количество: {user_exercise.count}', reply_markup=reply_markup)
     return SET_EXERCISE_NAME
 
 
