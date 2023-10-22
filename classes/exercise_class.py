@@ -16,7 +16,7 @@ class Exercise:
         """
 
         # todo сделать вывод в зависимости от языка (возможно прокидывать язык пользователя в упражнении)
-        s = f'{self.name} : {self.count}'
+        s = f'{self.name}: {self.count}'
         return s
 
 

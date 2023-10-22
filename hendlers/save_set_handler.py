@@ -6,7 +6,7 @@ from constants import CANCEL_SAVE_SET, CONFIRM_SAVING, SET_EXERCISE_NAME, WAIT_S
 
 from classes import Exercise
 from loader import storage
-from utils import logger
+from utils import logger, save_ids_message_for_delete, delete_messages
 
 EXERCISE_KEYS_LIST = storage.get_exercise_list()
 
@@ -16,6 +16,7 @@ async def choose_exercise(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     user = update.effective_user
     user_exercise = Exercise(user_id=user.id)
     # сохранить количество повторений
+    # todo переделать на try catch
     if update.message.text.split()[0].isdigit():
         # первое число считается количеством повторений
         count = int(update.message.text.split()[0])
@@ -26,7 +27,7 @@ async def choose_exercise(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     else:
         logger.error(f'''Количество повторений не найдено! message_text: "{update.message.text}"''')
         await context.bot.send_message(chat_id=user.id,
-                                       text='Количество не распознано!\nВведите количество выполненных повторений(цифрами)')
+                                           text='Количество не распознано!\nВведите количество выполненных повторений(цифрами)')
         return ConversationHandler.END
 
     context.user_data['exercise'] = user_exercise
@@ -45,7 +46,9 @@ async def choose_exercise(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     keyboard.append([InlineKeyboardButton('❌Cancel', callback_data=CANCEL_SAVE_SET)])
 
     reply_markup = InlineKeyboardMarkup(keyboard)
-    await context.bot.send_message(chat_id=user.id, text=f'Количество: {user_exercise.count}', reply_markup=reply_markup)
+    m = await context.bot.send_message(chat_id=user.id, text=f'Количество: {user_exercise.count}',
+                                       reply_markup=reply_markup)
+    await  save_ids_message_for_delete(context, *(m,))
     return SET_EXERCISE_NAME
 
 
@@ -56,7 +59,8 @@ async def set_exercise_name(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     if not exercise or not isinstance(exercise, Exercise):
         # Если нет упражнения выход
         error_text = "Error: Упражнение не найдено.\nПопробуйте заново"
-        await context.bot.send_message(chat_id=user.id, text=error_text)
+        m = await context.bot.send_message(chat_id=user.id, text=error_text)
+        await  save_ids_message_for_delete(context, *(m,))
         await cancel_save_set(update, context)
 
     exercise.id = int(query.data.split('_')[1])
@@ -72,9 +76,9 @@ async def set_exercise_name(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
-    await context.bot.send_message(chat_id=user.id, text=f'Сохранить подход:\n{exercise.show()}',
-                                   reply_markup=reply_markup)
-
+    m = await context.bot.send_message(chat_id=user.id, text=f'Сохранить подход:\n{exercise.show()}',
+                                       reply_markup=reply_markup)
+    await  save_ids_message_for_delete(context, *[m])
     return WAIT_SOLUTION
 
 
@@ -87,14 +91,18 @@ async def save_set_exercise(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     if exercise and isinstance(exercise, Exercise):
         storage.save_exercise(exercise)
         await context.bot.send_message(chat_id=update.effective_user.id,
-                                       text=f"Подход: {exercise.show()}\nСохранён!")
+                                       text=f"Подход:\n{exercise.show()}\nСохранён!")
 
     else:
         logger.error(f'''Упражнение не найдено: context.user_data:"{context.user_data}"''')
         await context.bot.send_message(chat_id=update.effective_user.id,
                                        text=f"ошибка упражнение не найдено, попробуйте снова")
 
-    context.user_data.clear()
+    try:
+        context.user_data.pop('exercise')
+    except KeyError as err:
+        logger.error(f'save_set_exercise - {err}')
+    await delete_messages(update, context)
     return ConversationHandler.END
 
 
@@ -102,8 +110,11 @@ async def cancel_save_set(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     """
     :return: Отмена сохранения сообщения
     """
-    await update.callback_query.delete_message()
-    context.user_data.clear()
+    await delete_messages(update, context)
+    try:
+        context.user_data.pop('exercise')
+    except KeyError as err:
+        logger.error(f'cancel_save_set - {err}')
     await context.bot.send_message(chat_id=update.effective_user.id, text="Отменено")
     return ConversationHandler.END
 
