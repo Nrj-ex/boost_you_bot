@@ -16,6 +16,7 @@ async def choose_exercise(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     user = update.effective_user
     user_exercise = Exercise(user_id=user.id)
     # сохранить количество повторений
+    await  save_ids_message_for_delete(context, update.message)
     # todo переделать на try catch
     if update.message.text.split()[0].isdigit():
         # первое число считается количеством повторений
@@ -27,7 +28,7 @@ async def choose_exercise(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     else:
         logger.error(f'''Количество повторений не найдено! message_text: "{update.message.text}"''')
         await context.bot.send_message(chat_id=user.id,
-                                           text='Количество не распознано!\nВведите количество выполненных повторений(цифрами)')
+                                       text='Количество не распознано!\nВведите количество выполненных повторений(цифрами)')
         return ConversationHandler.END
 
     context.user_data['exercise'] = user_exercise
@@ -48,7 +49,7 @@ async def choose_exercise(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     reply_markup = InlineKeyboardMarkup(keyboard)
     m = await context.bot.send_message(chat_id=user.id, text=f'Количество: {user_exercise.count}',
                                        reply_markup=reply_markup)
-    await  save_ids_message_for_delete(context, *(m,))
+    await  save_ids_message_for_delete(context, m)
     return SET_EXERCISE_NAME
 
 
@@ -60,7 +61,7 @@ async def set_exercise_name(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         # Если нет упражнения выход
         error_text = "Error: Упражнение не найдено.\nПопробуйте заново"
         m = await context.bot.send_message(chat_id=user.id, text=error_text)
-        await  save_ids_message_for_delete(context, *(m,))
+        await  save_ids_message_for_delete(context, m)
         await cancel_save_set(update, context)
 
     exercise.id = int(query.data.split('_')[1])
@@ -78,7 +79,7 @@ async def set_exercise_name(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 
     m = await context.bot.send_message(chat_id=user.id, text=f'Сохранить подход:\n{exercise.show()}',
                                        reply_markup=reply_markup)
-    await  save_ids_message_for_delete(context, *[m])
+    await  save_ids_message_for_delete(context, m)
     return WAIT_SOLUTION
 
 
