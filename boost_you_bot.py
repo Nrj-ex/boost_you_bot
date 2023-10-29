@@ -16,11 +16,11 @@ from telegram.ext import Application, CommandHandler, ContextTypes, AIORateLimit
     CallbackQueryHandler
 
 import config
-from hendlers import start
-from hendlers import help
-from hendlers import about
-from hendlers import show_user_statistics_handler
-from hendlers import save_set_handler
+from handlers import start
+from handlers import help
+from handlers import about
+from handlers import show_user_statistics_handler
+from handlers import save_set_handler
 
 
 async def button_options(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

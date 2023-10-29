@@ -1,8 +1,8 @@
 from telegram import Update
 from telegram.ext import ContextTypes
 from loader import storage
-from hendlers.help import help
-from hendlers.about import about
+from handlers.help import help
+from handlers.about import about
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
