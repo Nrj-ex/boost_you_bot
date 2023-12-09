@@ -37,7 +37,7 @@ async def show_user_statistics(update: Update, context: ContextTypes.DEFAULT_TYP
     if selected_period >= 99999:
         statistic += f'За все время\n'
     elif selected_period == 0:
-        statistic += f'За сегодня\n'
+        statistic += f'{start_data}\n'
     else:
         statistic += f'C {start_data} по {datetime.now().date()}\n'
 

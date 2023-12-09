@@ -13,14 +13,10 @@ if __version_info__ < (20, 0, 0, "alpha", 1):
     )
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes, AIORateLimiter, \
-    CallbackQueryHandler
+    CallbackQueryHandler, InlineQueryHandler
 
 import config
-from handlers import start
-from handlers import help
-from handlers import about
-from handlers import show_user_statistics_handler
-from handlers import save_set_handler
+from handlers import start, help, about, show_user_statistics_handler, save_set_handler, inline_query
 
 
 async def button_options(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -43,6 +39,8 @@ def main() -> None:
     application.add_handler(show_user_statistics_handler)
     application.add_handler(save_set_handler)
     application.add_handler(CallbackQueryHandler(button_options))
+
+    application.add_handler(InlineQueryHandler(inline_query))
 
     application.run_polling()
 
