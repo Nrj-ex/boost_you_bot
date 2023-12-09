@@ -51,7 +51,7 @@ async def inline_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             id=str(uuid4()),
             title="show my stats",
             input_message_content=InputTextMessageContent(statistic),
-            description="Your stats for N days",
+            description=f"Your stats for {selected_period} days",
             reply_markup=InlineKeyboardMarkup(keyboard),
 
         ),
