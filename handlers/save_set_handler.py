@@ -16,7 +16,7 @@ async def choose_exercise(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     user = update.effective_user
     user_exercise = Exercise(user_id=user.id)
     # сохранить количество повторений
-    await  save_ids_message_for_delete(context, update.message)
+    # await  save_ids_message_for_delete(context, update.message)
     # todo переделать на try catch
     if update.message.text.split()[0].isdigit():
         # первое число считается количеством повторений
@@ -92,7 +92,7 @@ async def save_set_exercise(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     if exercise and isinstance(exercise, Exercise):
         storage.save_exercise(exercise)
         await context.bot.send_message(chat_id=update.effective_user.id,
-                                       text=f"Подход:\n{exercise.show()}\nСохранён!")
+                                       text=f"Подход:\n{exercise.show()}\n✅Сохранён!")
 
     else:
         logger.error(f'''Упражнение не найдено: context.user_data:"{context.user_data}"''')
@@ -116,7 +116,7 @@ async def cancel_save_set(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         context.user_data.pop('exercise')
     except KeyError as err:
         logger.error(f'cancel_save_set - {err}')
-    await context.bot.send_message(chat_id=update.effective_user.id, text="Отменено")
+    await context.bot.send_message(chat_id=update.effective_user.id, text="❌Отменено")
     return ConversationHandler.END
 
 
